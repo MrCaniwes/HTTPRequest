@@ -1,0 +1,84 @@
+name: Build & Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Release Tag (örn: v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Create Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet Packages
+        run: nuget restore HTTPRequest/packages.config -PackagesDirectory packages
+
+      - name: Build Project (Release)
+        run: msbuild HTTPRequest/HTTPRequest.csproj /p:Configuration=Release /p:Platform="AnyCPU" /verbosity:minimal
+
+      - name: Prepare Release Artifacts
+        shell: pwsh
+        run: |
+          $publishDir = "publish"
+          New-Item -ItemType Directory -Force -Path $publishDir | Out-Null
+          
+          # Release çıktılarını kopyala (PDB gibi gereksiz hata ayıklama dosyaları hariç)
+          Copy-Item -Path "HTTPRequest\bin\Release\*" -Destination $publishDir -Recurse -Exclude "*.pdb","*.xml"
+          
+          # ZIP Arşivi Oluştur
+          Compress-Archive -Path "$publishDir\*" -DestinationPath "API-Cockpit-Studio.zip" -Force
+
+      - name: Determine Release Tag
+        id: vars
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $tag = "${{ github.ref_name }}"
+          } else {
+            $tag = "${{ github.event.inputs.version_tag }}"
+            if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v1.0.0" }
+          }
+          echo "RELEASE_TAG=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.RELEASE_TAG }}
+          name: API Cockpit Studio ${{ steps.vars.outputs.RELEASE_TAG }}
+          files: API-Cockpit-Studio.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## ⚡ API Cockpit Studio ${{ steps.vars.outputs.RELEASE_TAG }}
+            
+            ### 📦 Kurulum ve Çalıştırma:
+            1. Aşağıdaki **`API-Cockpit-Studio.zip`** dosyasını indirin.
+            2. ZIP dosyasını bir klasöre çıkartın.
+            3. **`HTTPRequest.exe`** dosyasına çift tıklayarak çalıştırın!
+            
+            ---
+            *Built automatically with GitHub Actions.*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

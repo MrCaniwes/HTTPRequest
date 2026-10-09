@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Cockpit Studio</title>
+  <link rel="stylesheet" href="https://app.httprequest/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="cockpit-theme">
+  <!-- Siber Arka Plan Parıltıları -->
+  <div class="cockpit-bg-effects">
+    <div class="cyber-spotlight spotlight-left"></div>
+    <div class="cyber-spotlight spotlight-right"></div>
+    <div class="cyber-grid-mesh"></div>
+  </div>
+
+  <div class="cockpit-shell">
+    <!-- SOL DİKEY DOCK / SİDEBAR (Sol Menü Barı) -->
+    <aside class="dock-sidebar">
+      <div class="dock-top">
+        <div class="dock-brand-core" title="API Cockpit Studio">
+          <div class="core-ring"></div>
+          <span class="core-symbol">◈</span>
+        </div>
+
+        <nav class="dock-nav">
+          <button class="dock-btn active" id="dockBtnComposer" title="İstek Oluşturucu (Composer)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <span class="dock-tooltip">İstek Oluştur</span>
+          </button>
+          <button class="dock-btn" id="dockBtnHistory" title="Geçmiş İstekler">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="dock-tooltip">Geçmiş (<span id="historyBadgeCount">0</span>)</span>
+          </button>
+          <button class="dock-btn" id="dockBtnPresets" title="Hazır Test API'leri">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span class="dock-tooltip">Önayarlar</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="dock-bottom">
+        <div class="engine-pulse" title="C# HttpClient Motoru Aktif">
+          <span class="pulse-core"></span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- GEÇMİŞ ÇEKMECESİ (SLIDE-OVER HISTORY DRAWER) -->
+    <div class="history-drawer" id="historyDrawer">
+      <div class="drawer-header">
+        <div class="drawer-title">
+          <span>📜 İstek Geçmişi</span>
+          <span class="history-count" id="historyDrawerCount">0 kayıt</span>
+        </div>
+        <div class="drawer-actions">
+          <button class="icon-tool-btn" id="btnClearHistory" title="Geçmişi Temizle">🗑️</button>
+          <button class="icon-tool-btn" id="btnCloseHistory" title="Kapat">✕</button>
+        </div>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="history-empty">Henüz kaydedilmiş istek yok.</div>
+      </div>
+    </div>
+
+    <!-- ANA İKİ SÜTUNLU ÇALIŞMA MASASI (HORIZONTAL SPLIT) -->
+    <main class="cockpit-split">
+      <!-- SOL SÜTUN: REQUEST FORGE (İstek Yapılandırması) -->
+      <section class="forge-column">
+        <!-- Konsol Başlığı & Hızlı Preset Barı -->
+        <div class="column-header">
+          <div class="header-tag">
+            <span class="pulse-dot"></span>
+            <span>REQUEST FORGE</span>
+          </div>
+          <div class="quick-preset-pills">
+            <button class="preset-pill" data-preset="posts-get">Posts API</button>
+            <button class="preset-pill" data-preset="posts-post">Create Post</button>
+            <button class="preset-pill" data-preset="users-get">Users API</button>
+            <button class="preset-pill" id="btnResetAll">Sıfırla</button>
+          </div>
+        </div>
+
+        <!-- Metot Seçici Segment & URL Kutusu -->
+        <div class="cockpit-address-deck">
+          <!-- Segmented Method Buttons (Tek tıkla metot seçimi) -->
+          <div class="method-segmented-bar">
+            <button class="method-segment active" data-method="GET">GET</button>
+            <button class="method-segment" data-method="POST">POST</button>
+            <button class="method-segment" data-method="PUT">PUT</button>
+            <button class="method-segment" data-method="DELETE">DELETE</button>
+            <button class="method-segment" data-method="PATCH">PATCH</button>
+          </div>
+
+          <!-- URL & Lazer Çizgisi & Gönder Butonu -->
+          <div class="url-control-strip">
+            <div class="laser-track" id="laserTrack"></div>
+            <div class="url-input-housing">
+              <span class="url-prefix-badge" id="protocolBadge">HTTPS</span>
+              <input type="text" id="urlInput" class="cockpit-url-field" 
+                     placeholder="https://api.domain.com/v1/endpoint" 
+                     value="https://jsonplaceholder.typicode.com/posts/1" 
+                     spellcheck="false" autocomplete="off" />
+              <button class="clear-url-btn" id="btnClearUrl" title="Temizle">✕</button>
+            </div>
+            <button class="blast-send-btn" id="btnSend">
+              <div class="blast-ring"></div>
+              <span class="blast-icon">⚡</span>
+              <span class="blast-label">ATEŞLE</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- İstek Detay Sekmeleri (Tab Switcher) -->
+        <div class="forge-deck-tabs">
+          <button class="forge-tab-btn active" data-forgetab="tab-auth">
+            <span class="tab-label">Yetkilendirme</span>
+            <span class="tab-indicator-badge" id="badgeAuth">Yok</span>
+          </button>
+          <button class="forge-tab-btn" data-forgetab="tab-body">
+            <span class="tab-label">Gövde (Body)</span>
+            <span class="tab-indicator-badge" id="badgeBody">Boş</span>
+          </button>
+          <button class="forge-tab-btn" data-forgetab="tab-headers">
+            <span class="tab-label">Başlıklar (Headers)</span>
+            <span class="tab-indicator-badge" id="badgeHeaders">1</span>
+          </button>
+        </div>
+
+        <!-- Sekme İçerik Alanı -->
+        <div class="forge-deck-content">
+          <!-- 1. AUTH PANEL -->
+          <div id="tab-auth" class="forge-pane active">
+            <div class="auth-mode-cards">
+              <label class="auth-mode-card active">
+                <input type="radio" name="authMode" value="none" checked>
+                <div class="card-icon">🔓</div>
+                <div class="card-text">
+                  <strong>Yetkisiz</strong>
+                  <small>No Auth</small>
+                </div>
+              </label>
+
+              <label class="auth-mode-card">
+                <input type="radio" name="authMode" value="bearer">
+                <div class="card-icon">🔑</div>
+                <div class="card-text">
+                  <strong>Bearer Token</strong>
+                  <small>JWT / OAuth</small>
+                </div>
+              </label>
+
+              <label class="auth-mode-card">
+                <input type="radio" name="authMode" value="apikey">
+                <div class="card-icon">🏷️</div>
+                <div class="card-text">
+                  <strong>API Key</strong>
+                  <small>Özel Header</small>
+                </div>
+              </label>
+
+              <label class="auth-mode-card">
+                <input type="radio" name="authMode" value="basic">
+                <div class="card-icon">👤</div>
+                <div class="card-text">
+                  <strong>Basic Auth</strong>
+                  <small>Kullanıcı/Şifre</small>
+                </div>
+              </label>
+            </div>
+
+            <!-- Dynamic Auth Inputs -->
+            <div class="auth-subforms">
+              <!-- None -->
+              <div id="subformNone" class="auth-subform active">
+                <div class="info-banner">
+                  <span>🛡️ Bu istek için hiçbir yetkilendirme başlığı eklenmeyecek.</span>
+                </div>
+              </div>
+
+              <!-- Bearer -->
+              <div id="subformBearer" class="auth-subform">
+                <div class="field-block">
+                  <div class="field-top">
+                    <label>BEARER ACCESS TOKEN</label>
+                    <button class="btn-micro" id="btnPasteBearer">📋 Panodan Yapıştır</button>
+                  </div>
+                  <textarea id="bearerTokenInput" class="cockpit-code-input h-small" placeholder="Token yapıştırın (örn: eyJhbGciOi...)" spellcheck="false"></textarea>
+                  <p class="field-footnote">⚡ Başlığa <code>Authorization: Bearer [token]</code> olarak otomatik eklenir.</p>
+                </div>
+              </div>
+
+              <!-- API Key -->
+              <div id="subformApiKey" class="auth-subform">
+                <div class="field-row-2">
+                  <div class="field-block">
+                    <label>HEADER ANAHTARI</label>
+                    <input type="text" id="apiKeyName" class="cockpit-input" value="X-API-Key" spellcheck="false" />
+                  </div>
+                  <div class="field-block">
+                    <label>ANAHTAR DEĞERİ</label>
+                    <input type="text" id="apiKeyValue" class="cockpit-input" placeholder="secret-key-token-..." spellcheck="false" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Basic -->
+              <div id="subformBasic" class="auth-subform">
+                <div class="field-row-2">
+                  <div class="field-block">
+                    <label>KULLANICI ADI</label>
+                    <input type="text" id="basicUser" class="cockpit-input" placeholder="admin" spellcheck="false" />
+                  </div>
+                  <div class="field-block">
+                    <label>ŞİFRE</label>
+                    <input type="password" id="basicPass" class="cockpit-input" placeholder="••••••••" />
+                  </div>
+                </div>
+                <p class="field-footnote">⚡ Base64'e dönüştürülüp <code>Authorization: Basic [credentials]</code> eklenir.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. BODY PANEL -->
+          <div id="tab-body" class="forge-pane">
+            <div class="pane-action-bar">
+              <div class="action-group-left">
+                <span class="sub-label">Content-Type:</span>
+                <select id="bodyContentType" class="cockpit-select">
+                  <option value="application/json" selected>application/json</option>
+                  <option value="text/plain">text/plain</option>
+                  <option value="application/xml">application/xml</option>
+                  <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
+                </select>
+              </div>
+              <div class="action-group-right">
+                <button class="btn-micro" id="btnSampleJson">+ Örnek JSON</button>
+                <button class="btn-micro" id="btnFormatBodyJson">✨ Formatla</button>
+                <button class="btn-micro" id="btnClearBody">🗑️ Temizle</button>
+              </div>
+            </div>
+            <div class="code-editor-box">
+              <textarea id="requestBodyText" class="cockpit-code-input" placeholder="{\n  &quot;title&quot;: &quot;Örnek&quot;,\n  &quot;completed&quot;: false\n}" spellcheck="false"></textarea>
+            </div>
+          </div>
+
+          <!-- 3. HEADERS PANEL -->
+          <div id="tab-headers" class="forge-pane">
+            <div class="pane-action-bar">
+              <span class="sub-label">İstek Başlıkları (Key: Value):</span>
+              <div class="action-group-right">
+                <button class="btn-micro" id="btnAddAcceptJson">+ Accept JSON</button>
+                <button class="btn-micro" id="btnClearHeaders">🗑️ Temizle</button>
+              </div>
+            </div>
+            <div class="code-editor-box">
+              <textarea id="requestHeadersText" class="cockpit-code-input" spellcheck="false">Accept: application/json</textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SAĞ SÜTUN: RESPONSE INSPECTOR (Yanıt Görüntüleyici & Hologram HUD) -->
+      <section class="inspector-column">
+        <!-- Hologram HUD: Durum, Süre, Boyut -->
+        <div class="hud-dashboard">
+          <div class="hud-status-module" id="hudStatusModule">
+            <div class="hud-badge" id="hudStatusCode">IDLE</div>
+            <div class="hud-desc" id="hudStatusDesc">İstek Bekleniyor</div>
+          </div>
+
+          <div class="hud-metrics-deck">
+            <div class="hud-stat-box">
+              <span class="stat-name">GECİKME</span>
+              <span class="stat-val" id="hudLatency">-- ms</span>
+            </div>
+            <div class="hud-stat-box">
+              <span class="stat-name">BOYUT</span>
+              <span class="stat-val" id="hudSize">-- KB</span>
+            </div>
+            <div class="hud-stat-box">
+              <span class="stat-name">MOTOR</span>
+              <span class="stat-val text-neon">Zero-CORS</span>
+            </div>
+          </div>
+
+          <div class="hud-actions">
+            <button class="hud-action-btn" id="btnCopyResponse" title="Yanıtı Panoya Kopyala">
+              <span class="btn-icon">📋</span>
+              <span class="btn-text">Kopyala</span>
+            </button>
+            <button class="hud-action-btn" id="btnDownloadResponse" title="JSON Olarak İndir">
+              <span class="btn-icon">💾</span>
+              <span class="btn-text">İndir</span>
+            </button>
+            <button class="hud-action-btn" id="btnClearResponse" title="Temizle">
+              <span class="btn-icon">✕</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Yanıt Sekmeleri (Body, Headers, Raw) -->
+        <div class="inspector-tabs-bar">
+          <div class="inspector-tabs">
+            <button class="insp-tab active" data-insptab="insp-tab-body">📄 Gövde</button>
+            <button class="insp-tab" data-insptab="insp-tab-headers">📋 Başlıklar</button>
+            <button class="insp-tab" data-insptab="insp-tab-raw">🔍 Ham HTTP</button>
+          </div>
+          <div class="inspector-tools">
+            <button class="btn-micro" id="btnFormatResponseJson">✨ Formatla</button>
+          </div>
+        </div>
+
+        <!-- Yanıt İçerik Alanı -->
+        <div class="inspector-body-viewport">
+          <!-- 1. Gövde -->
+          <div id="insp-tab-body" class="insp-view active">
+            <div class="line-numbered-code">
+              <div class="line-numbers-rail" id="responseLineNumbers">1</div>
+              <pre id="responseBodyViewer" class="code-hologram-pre">Gelen yanıt burada görüntülenecektir.</pre>
+            </div>
+          </div>
+
+          <!-- 2. Headers -->
+          <div id="insp-tab-headers" class="insp-view">
+            <pre id="responseHeadersViewer" class="code-hologram-pre">HTTP Yanıt Başlıkları burada listelenir.</pre>
+          </div>
+
+          <!-- 3. Raw -->
+          <div id="insp-tab-raw" class="insp-view">
+            <pre id="responseRawViewer" class="code-hologram-pre">Tüm HTTP yanıtı ham haliyle burada gösterilir.</pre>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://app.httprequest/app.js"></script>
+</body>
+</html>
